@@ -1,5 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-r"""
+"""
 Basic training script for PyTorch
 """
 
@@ -70,13 +70,23 @@ def train(cfg, local_rank, distributed):
         is_train=True,
         is_distributed=distributed,
         start_iter=arguments["iteration"],
+        left_image=True,
+    )
+    data_loader_right = make_data_loader(
+        cfg,
+        is_train=True,
+        is_distributed=distributed,
+        start_iter=arguments["iteration"],
+        left_image=False,
     )
 
     test_period = cfg.SOLVER.TEST_PERIOD
     if test_period > 0:
         data_loader_val = make_data_loader(cfg, is_train=False, is_distributed=distributed, is_for_period=True)
+        data_loader_val_right = make_data_loader(cfg, is_train=False, is_distributed=distributed, is_for_period=True, left_image=False)
     else:
         data_loader_val = None
+        data_loader_val_right = None
 
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
 
@@ -85,6 +95,8 @@ def train(cfg, local_rank, distributed):
         model,
         data_loader,
         data_loader_val,
+        data_loader_right,
+        data_loader_val_right,
         optimizer,
         scheduler,
         checkpointer,
@@ -186,15 +198,15 @@ def main():
         logger.info(config_str)
     logger.info("Running with config:\n{}".format(cfg))
 
-    output_config_path = os.path.join(cfg.OUTPUT_DIR, 'config.yml')
+    output_config_path = os.path.join(cfg.OUTPUT_DIR, 'kitti_config.yml')
     logger.info("Saving config into: {}".format(output_config_path))
     # save overloaded model config in the output directory
     save_config(cfg, output_config_path)
 
     model = train(cfg, args.local_rank, args.distributed)
 
-    if not args.skip_test:
-        run_test(cfg, model, args.distributed)
+#     if not args.skip_test:
+#         run_test(cfg, model, args.distributed)
 
 
 if __name__ == "__main__":
